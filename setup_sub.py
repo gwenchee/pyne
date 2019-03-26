@@ -23,7 +23,7 @@ else:
 from distutils.core import setup
 
 
-VERSION = '0.5.10'
+VERSION = '0.5.11'
 IS_NT = os.name == 'nt'
 
 
@@ -56,7 +56,7 @@ def main():
                  ] + extpttn,
         'pyne.xs': ['*.pxd'] + extpttn,
         'pyne.gui': ['*.pyw'],
-        'pyne.dbgen': ['*.html', '*.csv', 'abundances.txt', 'mass.mas12'],
+        'pyne.dbgen': ['*.html', '*.csv', 'abundances.txt', 'mass.mas12', '*.dat'],
         }
     setup_kwargs = {
         "name": "pyne",

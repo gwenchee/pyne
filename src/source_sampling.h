@@ -33,10 +33,13 @@
 #include <stdexcept> 
 #include <sstream>
 #include <string>
+#include <map>
 
 #include "moab/Range.hpp"
 #include "moab/Core.hpp"
+#ifndef PYNE_IS_AMALGAMATED
 #include "measure.h"
+#endif
 #include "moab/CartVect.hpp"
 
 #ifdef __cplusplus
@@ -46,7 +49,9 @@ extern "C" {
 namespace pyne {
 
   /// MCNP interface for source sampling setup
-  /// \param mode The sampling mode: 0 = analog, 1 = uniform, 2 = user-specified
+  /// \param mode The sampling mode: 
+  /// Voxel(DEFAULT) R2S: 0 = analog, 1 = uniform, 2 = user-specified
+  /// SubVoxel(SUBVOXEL) R2S: 3 = analog, 4 = uniform, 5 = user-specified
   void sampling_setup_(int* mode);
   /// MCNP interface to sample particle birth parameters after sampling setup
   /// \param rands Six pseudo-random numbers supplied from the Fortran side.
@@ -55,12 +60,14 @@ namespace pyne {
   /// \param z The sampled z position returned by this function
   /// \param e The sampled energy returned by this function
   /// \param w The sampled y statistical weight returned by this function
+  /// \param c The sampled cell number
   void particle_birth_(double* rands,
                             double* x,
                             double* y,
                             double* z,
                             double* e,
-                            double* w);
+                            double* w,
+                            int* c);
   /// Helper function for MCNP interface that reads energy boudaries from a file
   /// \param e_bounds_file A file containing the energy group boundaries.
   std::vector<double> read_e_bounds(std::string e_bounds_file);
@@ -87,6 +94,40 @@ namespace pyne {
     int n; /// Number of bins in the PDF.
     std::vector<double> prob; /// Probabilities.
     std::vector<int> alias; /// Alias probabilities.
+  };
+
+  // class Source particle
+  class SourceParticle {
+    public:
+    SourceParticle();
+    /// Constructor for source particle
+    /// \param x The x coordinate of the source particle
+    /// \param y The y coordinate of the source particle
+    /// \param z The z coordinate of the source particle
+    /// \param e The energy of the source particle
+    /// \param w The weight of the source particle
+    /// \param c The cell number of the source particle
+    SourceParticle(double x,
+                   double y,
+                   double z,
+                   double e,
+                   double w,
+                   int c);
+    ~SourceParticle();
+
+    double get_x() {return x;};
+    double get_y() {return y;};
+    double get_z() {return z;};
+    double get_e() {return e;};
+    double get_w() {return w;};
+    int get_c() {return c;};
+    private:
+    double x; // x coordinate
+    double y; // y coordinate
+    double z; // z coordinate
+    double e; // energy
+    double w; // weight
+    int c; // cell number
   };
   
   /// Problem modes
@@ -122,11 +163,23 @@ namespace pyne {
             std::string src_tag_name, 
             std::vector<double> e_bounds, 
             std::string bias_tag_name);
+    /// Constuctor for overall sampler
+    /// \param filename The filename of the h5m file
+    /// \param tag_names The map of src_tag_name and bias_tag_name
+    /// \param e_bounds The energy boundaries, note there are N + 1 energy
+    ///                 bounds for N energy groups
+    /// \param mode The mode number, 0, 1, 2, 3, 4 or 5
+    Sampler(std::string filename,
+            std::map<std::string, std::string> tag_names,
+            std::vector<double> e_bounds,
+            int mode);
+
     /// Samples particle birth parameters
     /// \param rands Six pseudo-random numbers in range [0, 1].
-    /// \return A vector containing the x position, y, position, z, point, energy
-    ///         and weight of a particle (in that order).
-    std::vector<double> particle_birth(std::vector<double> rands);
+    /// \return A SourceParticle object containing the x position, y, position,
+    ///         z, position, e, energy and w, weight of a particle.
+    pyne::SourceParticle particle_birth(std::vector<double> rands);
+
     ~Sampler() {
       delete mesh;
       delete at;
@@ -138,10 +191,14 @@ namespace pyne {
     std::string filename; ///< MOAB mesh file path
     std::string src_tag_name; ///< Unbiased source density distribution
     std::string bias_tag_name; ///< Biased source density distribution
+    std::string cell_number_tag_name; ///< Cell number tag
+    std::string cell_fracs_tag_name; ///< Cell volume fraction tag
+    std::map<std::string, std::string> tag_names; /// < tag names
     std::vector<double> e_bounds;  ///< Energy boundaries
     int num_e_groups; ///< Number of groups in tag \a _src_tag_name
     int num_bias_groups; ///< Number of groups tag \a _bias_tag_name
-    BiasMode bias_mode; ///< Problem mode: analog, uniform, user
+    int max_num_cells; /// Max number of cells in voxels
+    BiasMode bias_mode; ///< Bias mode: ANALOG, UNIFORM, USER
     // mesh
     moab::Interface* mesh; ///< MOAB mesh
     int num_ves; ///< Number of mesh volume elements on \a mesh.
@@ -150,6 +207,8 @@ namespace pyne {
     // sampling
     std::vector<edge_points> all_edge_points; ///< Four connected points on a VE.
     std::vector<double> biased_weights; ///< Birth weights for biased sampling.
+    std::vector<int> cell_number; ///< Tag cell_number
+    std::vector<double> cell_fracs; ///< Tag cell_fracs
     AliasTable* at; ///< Alias table used for sampling.
   
   // member functions

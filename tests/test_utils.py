@@ -1,10 +1,10 @@
 """PyNE utility tests"""
 import os
 
-import nose 
+import nose
 
 from nose.tools import assert_equal, assert_not_equal, assert_raises, raises, \
-                       assert_in, assert_true
+    assert_in, assert_true
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
@@ -13,7 +13,68 @@ import numpy as np
 
 
 def test_to_sec():
+    # as
+    assert_equal(2e-18, utils.to_sec(2, 'AS'))
+    assert_equal(2e-18, utils.to_sec(2, 'attosec'))
+    assert_equal(2e-18, utils.to_sec(2, 'attosecond'))
+    assert_equal(2e-18, utils.to_sec(2, 'attoseconds'))
+    # fs
+    assert_equal(2e-15, utils.to_sec(2, 'FS'))
+    assert_equal(2e-15, utils.to_sec(2, 'femtosec'))
+    assert_equal(2e-15, utils.to_sec(2, 'femtosecond'))
+    assert_equal(2e-15, utils.to_sec(2, 'femtoseconds'))
+    # ps
+    assert_equal(2e-12, utils.to_sec(2, 'PS'))
+    assert_equal(2e-12, utils.to_sec(2, 'picosec'))
+    assert_equal(2e-12, utils.to_sec(2, 'picosecond'))
+    assert_equal(2e-12, utils.to_sec(2, 'picoseconds'))
+    # ns
+    assert_equal(2e-9, utils.to_sec(2, 'NS'))
+    assert_equal(2e-9, utils.to_sec(2, 'nanosec'))
+    assert_equal(2e-9, utils.to_sec(2, 'nanosecond'))
+    assert_equal(2e-9, utils.to_sec(2, 'nanoseconds'))
+    # us
+    assert_equal(2e-6, utils.to_sec(2, 'US'))
+    assert_equal(2e-6, utils.to_sec(2, 'microsec'))
+    assert_equal(2e-6, utils.to_sec(2, 'microsecond'))
+    assert_equal(2e-6, utils.to_sec(2, 'microseconds'))
+    # ms
+    assert_equal(2e-3, utils.to_sec(2, 'MS'))
+    assert_equal(2e-3, utils.to_sec(2, 'millisec'))
+    assert_equal(2e-3, utils.to_sec(2, 'millisecond'))
+    assert_equal(2e-3, utils.to_sec(2, 'milliseconds'))
+    # s
+    assert_equal(2.0, utils.to_sec(2, 'S'))
+    assert_equal(2.0, utils.to_sec(2, 'sec'))
+    assert_equal(2.0, utils.to_sec(2, 'second'))
+    assert_equal(2.0, utils.to_sec(2, 'seconds'))
+    # m
     assert_equal(120.0, utils.to_sec(2, 'M'))
+    assert_equal(120.0, utils.to_sec(2, 'min'))
+    assert_equal(120.0, utils.to_sec(2, 'minute'))
+    assert_equal(120.0, utils.to_sec(2, 'minutes'))
+    # h
+    assert_equal(7200.0, utils.to_sec(2, 'H'))
+    assert_equal(7200.0, utils.to_sec(2, 'hour'))
+    assert_equal(7200.0, utils.to_sec(2, 'hours'))
+    # d
+    assert_equal(172800.0, utils.to_sec(2, 'D'))
+    assert_equal(172800.0, utils.to_sec(2, 'day'))
+    assert_equal(172800.0, utils.to_sec(2, 'days'))
+    # w
+    assert_equal(1209600.0, utils.to_sec(2, 'W'))
+    assert_equal(1209600.0, utils.to_sec(2, 'week'))
+    assert_equal(1209600.0, utils.to_sec(2, 'weeks'))
+    # y
+    assert_equal(63115200.0, utils.to_sec(2, 'Y'))
+    assert_equal(63115200.0, utils.to_sec(2, 'year'))
+    assert_equal(63115200.0, utils.to_sec(2, 'years'))
+    # c
+    assert_equal(6311520000.0, utils.to_sec(2, 'C'))
+    assert_equal(6311520000.0, utils.to_sec(2, 'century'))
+    assert_equal(6311520000.0, utils.to_sec(2, 'centuries'))
+    # undifined unit trigs ValueError
+    assert_raises(ValueError, utils.to_sec, 2, 'month')
 
 
 def test_to_barns():
@@ -37,6 +98,7 @@ def test_failure():
     else:
         assert_equal('*** FAILURE ***: World', utils.failure('World'))
 
+
 def test_remove():
     # test file removal
     assert_true('hello.txt' not in os.listdir('.'))
@@ -59,7 +121,7 @@ def test_remove():
     utils.remove('rawr')
     assert_true('rawr' not in os.listdir('.'))
 
-    # Test pass through on non-existant 
+    # Test pass through on non-existant
     assert_true('Medic!' not in os.listdir('.'))
     utils.remove('Medic!')
 
@@ -119,16 +181,18 @@ def test_fromstring_token4():
     exp = np.array([1.0, 2.3, 4.0])
     assert_array_equal(obs, exp)
 
+
 def test_use_warnings():
     first = utils.use_warnings()
     second = utils.use_warnings()
     assert_equal(first, second)
+
 
 def test_toggle_warnings():
     state = utils.use_warnings()
     observed = utils.toggle_warnings()
     assert_equal(state, not observed)
 
+
 if __name__ == "__main__":
     nose.runmodule()
-

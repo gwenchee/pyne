@@ -165,6 +165,9 @@ namespace pyne
     void write_hdf5(std::string filename, std::string datapath="/material",
                     std::string nucpath="/nucid", float row=-0.0, int chunksize=100);
 
+    /// Return an openmc xml material element as a string
+    std::string openmc(std::string fact_type = "mass");
+    
     /// Return an mcnp input deck record as a string
     std::string mcnp(std::string frac_type = "mass");
     ///
@@ -248,7 +251,9 @@ namespace pyne
     comp_map dose_per_g(std::string dose_type, int source=0);
     /// Returns a copy of the current material where all natural elements in the
     /// composition are expanded to their natural isotopic abundances.
-    Material expand_elements();
+    Material expand_elements(std::set<int> exception_ids);
+    // Wrapped version to facilitate calling from python
+    Material expand_elements(int **int_ptr_arry = NULL);
     // Returns a copy of the current material where all the isotopes of the elements
     // are added up, atomic-fraction-wise, unless they are in the exception set
     Material collapse_elements(std::set<int> exception_znum);

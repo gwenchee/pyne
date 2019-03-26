@@ -283,6 +283,13 @@ def test_expand_elements2():
     assert_almost_equal(data.natural_abund(60120000), afrac[60120000])
     assert_almost_equal(data.natural_abund(60130000), afrac[60130000])
 
+def test_expand_elements3():
+    natmat = Material({'C': 1.0})
+    exception_ids = {nucname.id("C")}
+    expmat = natmat.expand_elements(exception_ids)
+    afrac = expmat.to_atom_frac()
+    assert_almost_equal(natmat[60000000], afrac[60000000])
+    
 def test_collapse_elements1():
     """ Very simple test to combine nucids"""
     nucvec = {10010000:  1.0,
@@ -1113,6 +1120,107 @@ def test_deepcopy():
     assert_equal(x, Material({'H1': 1.0}, mass=2.0, density=3.0, atoms_per_molecule=4.0,
                              metadata={'name': 'loki'}))
 
+
+def test_openmc():
+
+    leu = Material(nucvec={'U235': 0.04, 'U238': 0.96},
+                   metadata={'mat_number': 2,
+                          'table_ids': {'92235':'15c', '92238':'25c'},
+                          'mat_name':'LEU',
+                          'source':'Some URL',
+                          'comments': ('this is a long comment that will definitly '
+                                       'go over the 80 character limit, for science'),
+                          'name':'leu'},
+                   density=19.1)
+
+    mass = leu.openmc()
+    mass_exp = ('<material id="2" name="LEU" >\n'
+                '  <density value="19.1" units="g/cc" />\n'
+                '  <nuclide name="U235" wo="4.0000e-02" />\n'
+                '  <nuclide name="U238" wo="9.6000e-01" />\n'
+                '</material>\n')
+    assert_equal(mass, mass_exp)
+
+    atom = leu.openmc(frac_type='atom')
+    atom_exp = ('<material id="2" name="LEU" >\n'
+                '  <density value="19.1" units="g/cc" />\n'
+                '  <nuclide name="U235" ao="4.0491e-02" />\n'
+                '  <nuclide name="U238" ao="9.5951e-01" />\n'
+                '</material>\n')
+    assert_equal(atom, atom_exp)
+
+    # check write/read consistency
+    leu.write_hdf5('leu.h5')
+
+    leu_read = Material()
+    leu_read.from_hdf5('leu.h5', '/material')
+
+    mass = leu.openmc()
+    assert_equal(mass, mass_exp)
+
+    atom = leu.openmc(frac_type='atom')
+    assert_equal(atom, atom_exp)
+
+def test_openmc_mat0():
+
+    leu = Material(nucvec={'U235': 0.04, 'U236': 0.0, 'U238M': 0.96},
+                   metadata={'mat_number': 2,
+                          'table_ids': {'92235':'15c', '92236':'15c', '92238':'25c'},
+                          'mat_name':'LEU',
+                          'source':'Some URL',
+                          'comments': ('this is a long comment that will definitly '
+                                       'go over the 80 character limit, for science'),
+                          'name':'leu'},
+                   density=19.1)
+
+    mass = leu.openmc()
+    mass_exp = ('<material id="2" name="LEU" >\n'
+                '  <density value="19.1" units="g/cc" />\n'
+                '  <nuclide name="U235" wo="4.0000e-02" />\n'
+                '  <nuclide name="U238_m1" wo="9.6000e-01" />\n'
+                '</material>\n')
+    assert_equal(mass, mass_exp)
+
+def test_openmc_sab():
+
+    leu = Material(nucvec={'H1': 0.66, 'O16': 0.33},
+                   metadata={'mat_number': 2,
+                             'sab': 'c_H_in_H2O',
+                             'mat_name':'Water',
+                             'source':'Some URL',
+                             'comments': ('this is a long comment that will definitly '
+                                          'go over the 80 character limit, for science'),
+                          'name':'leu'},
+                   density=1.001)
+
+    mass = leu.openmc()
+    mass_exp = ('<material id="2" name="Water" >\n'
+                '  <density value="1.001" units="g/cc" />\n'
+                '  <nuclide name="H1" wo="6.6667e-01" />\n'
+                '  <nuclide name="O16" wo="3.3333e-01" />\n'
+                '  <sab name="c_H_in_H2O" />\n'
+                '</material>\n')
+    assert_equal(mass, mass_exp)
+
+def test_openmc_c():
+
+    csi = Material()
+    csi.from_atom_frac({'C': 0.5, 'Si': 0.5})
+    csi.metadata= {'mat_number': 2,
+                   'mat_name':'silicon carbide',
+                   'name':'leu'}
+    csi.density = 3.16
+
+    atom = csi.openmc(frac_type='atom')
+    atom_exp = ('<material id="2" name="silicon carbide" >\n'
+                '  <density value="3.16" units="g/cc" />\n'
+                '  <nuclide name="C0" ao="5.0000e-01" />\n'                
+                '  <nuclide name="Si28" ao="4.6112e-01" />\n'
+                '  <nuclide name="Si29" ao="2.3425e-02" />\n'
+                '  <nuclide name="Si30" ao="1.5460e-02" />\n'
+                '</material>\n')
+    assert_equal(atom, atom_exp)
+    
 def test_mcnp():
 
     leu = Material(nucvec={'U235': 0.04, 'U238': 0.96},
@@ -1146,7 +1254,7 @@ def test_mcnp():
                 '     92235.15c 4.0491e-02\n'
                 '     92238.25c 9.5951e-01\n')
     assert_equal(atom, atom_exp)
-
+    
 def test_mcnp_mat0():
 
     leu = Material(nucvec={'U235': 0.04, 'U236': 0.0, 'U238': 0.96},
@@ -1170,6 +1278,8 @@ def test_mcnp_mat0():
                 '     92238.25c -9.6000e-01\n')
     assert_equal(mass, mass_exp)
 
+
+    
 
 def test_alara():
 
@@ -1204,6 +1314,40 @@ def test_alara():
                 '     u:238 9.6000E+01 92\n')
     assert_equal(written, expected)
 
+def test_write_openmc():
+    if 'openmc_mass_fracs.txt' in os.listdir('.'):
+        os.remove('openmc_mass_fracs.txt')
+
+    leu = Material(nucvec={'U235': 0.04, 'U238': 0.96},
+                   metadata={'mat_number': 2,
+                          'table_ids': {'92235':'15c', '92238':'25c'},
+                          'mat_name':'LEU',
+                          'source':'Some URL',
+                          'comments': ('this is a long comment that will definitly '
+                                       'go over the 80 character limit, for science'),
+                          'name':'leu'},
+                   density=19.1)
+
+    leu.write_openmc('openmc_mass_fracs.txt')
+    leu.write_openmc('openmc_mass_fracs.txt', frac_type='atom')
+
+
+    
+    with open('openmc_mass_fracs.txt') as f:
+        written = f.read()
+    expected = ('<material id="2" name="LEU" >\n'
+                '  <density value="19.1" units="g/cc" />\n'
+                '  <nuclide name="U235" wo="4.0000e-02" />\n'
+                '  <nuclide name="U238" wo="9.6000e-01" />\n'
+                '</material>\n'
+                '<material id="2" name="LEU" >\n'
+                '  <density value="19.1" units="g/cc" />\n'
+                '  <nuclide name="U235" ao="4.0491e-02" />\n'
+                '  <nuclide name="U238" ao="9.5951e-01" />\n'
+                '</material>\n')
+    assert_equal(written, expected)
+    os.remove('openmc_mass_fracs.txt')
+    
 def test_write_mcnp():
     if 'mcnp_mass_fracs.txt' in os.listdir('.'):
         os.remove('mcnp_mass_fracs.txt')
