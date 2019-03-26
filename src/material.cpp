@@ -1224,6 +1224,8 @@ pyne::comp_map pyne::Material::decay_heat() {
                    decay_const(i->first) * q_val(i->first) / \
                    atomic_mass(i->first) / pyne::MeV_per_MJ;
   }
+  std::cout << "DECAYHEAT" << std::endl;
+  std::cout << dh << std::endl;
   return dh;
 }
 
